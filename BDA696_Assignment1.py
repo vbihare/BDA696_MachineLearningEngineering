@@ -41,6 +41,7 @@ def main():
         x="Species",
         color="Species",
         hover_data=iris_data.columns,
+        title="Violin plot to visualize Sepal Length ",
     )
     plot1.show()
 
@@ -51,19 +52,30 @@ def main():
         z="Petal_Width",
         color="Species",
         hover_data=iris_data.columns,
+        title="3d Scatter plot between Sepal Width, " "Sepal length and Petal width",
     )
     plot2.show()
 
-    plot3 = px.histogram(iris_data, x="Sepal_Length", y="Sepal_Width", color="Species")
+    plot3 = px.histogram(
+        iris_data,
+        x="Sepal_Length",
+        y="Sepal_Width",
+        color="Species",
+        title="Distribution of Sepal length and Sepal width with respect to species",
+    )
     plot3.show()
 
     iris_data.plot(kind="scatter", x="Sepal_Length", y="Petal_Length")
+    plt.title("Scatter plot between Sepal Length and petal Length")
     plt.show()
 
     sns.set_style("whitegrid")
     sns.FacetGrid(iris_data, hue="Species", height=6).map(
         plt.scatter, "Sepal_Length", "Petal_Length"
     ).add_legend()
+    plt.title(
+        "Scatter plot between Sepal Length and Petal Length, with different species"
+    )
     plt.show()
 
     # Splitting the dataset into train and test
