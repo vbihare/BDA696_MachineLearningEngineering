@@ -23,6 +23,7 @@ class Rolling_average(
         kwargs = self._input_kwargs
         return self._set(**kwargs)
 
+    # Calculating the Batting average
     def _transform(self, dataset):
         input_cols = self.getInputCols()
         output_col = self.getOutputCol()
