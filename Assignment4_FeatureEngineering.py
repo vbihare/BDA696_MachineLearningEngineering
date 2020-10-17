@@ -25,7 +25,7 @@ def main(file, response):
         os.makedirs("assignment4/graph")
 
     # Let's check if the response variable is Continuous or Boolean
-    response_var_type = Continuous_or_Boolean(df)
+    response_var_type = continuous_or_boolean(df)
 
     # If the variable is categorical we will use Regressor
     if response_var_type == "Categorical":
@@ -189,7 +189,7 @@ def main(file, response):
         )
 
 
-def Continuous_or_Boolean(df):
+def continuous_or_boolean(df):
     if df.variable.nunique() > 2:
         return "Continuous"
     else:
