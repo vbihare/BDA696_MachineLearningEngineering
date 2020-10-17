@@ -8,3 +8,5 @@ scikit-learn
 seaborn
 sqlalchemy
 statsmodels
+mysqlclient
+sqlalchemy
