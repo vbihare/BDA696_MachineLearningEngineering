@@ -22,3 +22,5 @@ scipy==1.5.2              # via scikit-learn, seaborn
 seaborn==0.10.1           # via -r requirements.in
 six==1.15.0               # via cycler, plotly, python-dateutil, retrying
 threadpoolctl==2.1.0      # via scikit-learn
+
+statsmodels~=0.12.0

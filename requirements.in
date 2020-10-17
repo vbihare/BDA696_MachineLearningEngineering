@@ -1,6 +1,10 @@
+matplotlib
 numpy
 pandas
 plotly
+pyspark
+pyspark-stubs
 scikit-learn
-matplotlib
 seaborn
+sqlalchemy
+statsmodels
