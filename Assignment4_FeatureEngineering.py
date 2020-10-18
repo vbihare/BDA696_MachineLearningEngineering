@@ -15,10 +15,11 @@ from sklearn.metrics import confusion_matrix
 def main(file, response):
     df = pd.read_csv(file)
     print("Our response variable is" + "\n" + response)
+    df = df.dropna(axis=1, how="any")
+    print(df, response)
     df = df.rename(columns={response: "response"})
-    df = df.dropna(axis=1, how="all")
     y = df.response.values
-    pred = df.drop(response, axis=1)
+    pred = df.drop("response", axis=1)
 
     # Let's make a folder to store our plots
     if not os.path.exists("assignment4/graph"):
@@ -55,11 +56,15 @@ def main(file, response):
     t_value = []
     p_value = []
     m_plot = []
-    for column in pred.columns:
+    cat_con = []
+    file = []
+    # mean_unweighted = []
+    # mean_weighted = []
+    for var in pred.columns:
         # Let's first calculate p-value and t-value
         if response_var_type == "Categorical":
             y = df["response"]
-            predictor = statsmodels.api.add_constant(df[column])
+            predictor = statsmodels.api.add_constant(df[var])
             linear_regression_model = statsmodels.api.OLS(y, predictor)
             linear_regression_model_fitted = linear_regression_model.fit()
             print(linear_regression_model_fitted.summary())
@@ -73,53 +78,49 @@ def main(file, response):
             p_value.append(pvalue)
 
             # Plotting the figure
-            figure = px.scatter(x=df[column], y=y, trendline="ols")
+            figure = px.scatter(x=df[var], y=y, trendline="ols")
             figure.update_layout(
-                title=f"Variable: {column}: (t-value={t_value}) (p-value={p_value})",
-                xaxis_title=f"Variable: {column}",
+                title=f"Variable: {var}: (t-value={tvalue}) (p-value={pvalue})",
+                xaxis_title=f"Variable: {var}",
                 yaxis_title="y",
             )
 
             figure.write_html(
-                file=f"assignment4/plots/ranking_{column}.html", include_plotlyjs="cdn"
+                file=f"assignment4/graph/ranking_{var}.html", include_plotlyjs="cdn"
             )
-            filepath = "assignment4/graph/ranking_" + column + ".html"
+            filepath = "assignment4/graph/ranking_" + var + ".html"
             m_plot.append("<a href=" + filepath + ">" + filepath + "</a>")
 
-    else:
-        predictor = statsmodels.api.add_constant(df[column])
-        logistic_regression_model = statsmodels.api.Logit(df["response"], predictor)
-        logistic_regression_model_fitted = logistic_regression_model.fit()
-        print(logistic_regression_model_fitted.summary())
+        else:
+            y = df["response"]
+            predictor = statsmodels.api.add_constant(df[var])
+            logistic_regression_model = statsmodels.api.Logit(df["response"], predictor)
+            logistic_regression_model_fitted = logistic_regression_model.fit()
+            print(logistic_regression_model_fitted.summary())
 
-        # Getting the t_value and p_value using the model
-        tvalue = round(logistic_regression_model_fitted.tvalues[1], 6)
-        pvalue = "{:.6e}".format(logistic_regression_model_fitted.pvalues[1])
+            # Getting the t_value and p_value using the model
+            tvalue = round(logistic_regression_model_fitted.tvalues[1], 6)
+            pvalue = "{:.6e}".format(logistic_regression_model_fitted.pvalues[1])
 
-        # Appending it to the list
-        t_value.append(tvalue)
-        p_value.append(pvalue)
+            # Appending it to the list
+            t_value.append(tvalue)
+            p_value.append(pvalue)
 
-        # Plotting the figure
-        file_name = "assignment4/plots/ranking_" + column + ".html"
-        m_plot.append("<a href=" + file_name + ">" + file_name + "</a>")
-        # Plot the figure
-        figure = px.scatter(x=df[column], y=y, trendline="ols")
-        figure.update_layout(
-            title=f"Variable: {column}: (t-value={t_value}) (p-value={p_value})",
-            xaxis_title=f"Variable: {column}",
-            yaxis_title="y",
-        )
-        figure.write_html(
-            file=f"assignment4/plots/ranking_{column}.html", include_plotlyjs="cdn"
-        )
+            # Plotting the figure
+            file_name = "assignment4/plots/ranking_" + var + ".html"
+            m_plot.append("<a href=" + file_name + ">" + file_name + "</a>")
+            # Plot the figure
+            figure = px.scatter(x=df[var], y=y, trendline="ols")
+            figure.update_layout(
+                title=f"Variable: {var}: (t-value={tvalue}) (p-value={pvalue})",
+                xaxis_title=f"Variable: {var}",
+                yaxis_title="y",
+            )
+            figure.write_html(
+                file=f"assignment4/graph/ranking_{var}.html", include_plotlyjs="cdn"
+            )
 
-    cat_con = []
-    file = []
-    # mean_unweighted = []
-    # mean_weighted = []
-    for var in pred.columns:
-        if cat_or_bool(var) and response_var_type == "Boolean":
+        if cat_or_bool(pred[var]) and response_var_type == "Boolean":
             fpath = "assignment4/graph/cat_cat_heatmap" + var + ".html"
 
             cm = confusion_matrix(var, df["response"])
@@ -140,19 +141,19 @@ def main(file, response):
             cat_con.append("Categorical")
             file.append("")
 
-        elif not cat_or_bool(var) and response_var_type == "Boolean":
+        elif not cat_or_bool(pred[var]) and response_var_type == "Boolean":
             fpath = "assignment4/graph/cat_con_dist" + var + ".html"
             cat_con_dist(df, var, fpath)
             cat_con.append("Continuous")
             file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
-        elif cat_or_bool(var) and response_var_type != "Boolean":
+        elif cat_or_bool(pred[var]) and response_var_type != "Boolean":
             fpath = "assignment4/graph/con_cat_violin" + var + ".html"
             cont_cat_violin(df, var, fpath)
             cat_con.append("Categorical")
             file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
-        elif not cat_or_bool(var) and response_var_type != "Boolean":
+        elif not cat_or_bool(pred[var]) and response_var_type != "Boolean":
             fpath = "assignment4/graph/con_con_scatter" + var + ".html"
 
             plot1 = df.plot(kind="scatter", x=var, y=df["response"])
@@ -174,23 +175,21 @@ def main(file, response):
         """
 
         # Assigning everything to a dataframe
-        result["cat_con"] = cat_con
-        result["t-value"] = t_value
-        result["p-value"] = p_value
-        result["m-plot"] = m_plot
-        result["graphs"] = file
-        result["Variable_importance"] = importance
-        # result['mean_unweighted']= mean_unweighted
-        # result['mean_weighted']= mean_weighted
+    result["cat_con"] = cat_con
+    result["t-value"] = t_value
+    result["p-value"] = p_value
+    result["m-plot"] = m_plot
+    result["graphs"] = file
+    result["Variable_importance"] = importance
+    # result['mean_unweighted']= mean_unweighted
+    # result['mean_weighted']= mean_weighted
 
-        print(result)
-        result.to_html(
-            "Bihare_Vaishnavi_Assignment4.html", render_links=True, escape=False
-        )
+    print(result)
+    result.to_html("Bihare_Vaishnavi_Assignment4.html", render_links=True, escape=False)
 
 
 def continuous_or_boolean(df):
-    if df.variable.nunique() > 2:
+    if df.response.nunique() > 2:
         return "Continuous"
     else:
         return "Boolean"
@@ -239,8 +238,8 @@ def cont_cat_violin(df, col, file_name):
 def cat_con_dist(df, col, filename):
     # Grouping
     groups = ["0", "1"]
-    label0 = df[df["target"] == 0][col]
-    label1 = df[df["target"] == 1][col]
+    label0 = df[df["response"] == 0][col]
+    label1 = df[df["response"] == 1][col]
 
     plot = figure_factory.create_distplot([label0, label1], groups)
     plot.update_layout(
@@ -255,6 +254,9 @@ def cat_con_dist(df, col, filename):
 
 
 if __name__ == "__main__":
-    file = sys.argv[1]
-    response = sys.argv[2]
+    file = "data.csv"
+    response = "diagnosis"
+
+    # file = sys.argv[1]
+    # response = sys.argv[2]
     sys.exit(main(file, response))
