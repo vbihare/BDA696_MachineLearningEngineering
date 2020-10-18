@@ -12,6 +12,7 @@ if [[ $response == '' ]] && [[ $file != '' ]];then
   read -p "Enter a response variable:" response
   if [ -z $target ];then
      '$file' = 'data.csv'
+     '$response' = 'diagnosis'
   fi
 fi
 

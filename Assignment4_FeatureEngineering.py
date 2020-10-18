@@ -8,6 +8,7 @@ import statsmodels
 import statsmodels.api
 from plotly import express as px
 from plotly import figure_factory, graph_objects
+from plotly.subplots import make_subplots
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
 
@@ -16,7 +17,6 @@ def main(file, response):
     df = pd.read_csv(file)
     print("Our response variable is" + "\n" + response)
     df = df.dropna(axis=1, how="any")
-    print(df, response)
     df = df.rename(columns={response: "response"})
     y = df.response.values
     pred = df.drop("response", axis=1)
@@ -58,8 +58,9 @@ def main(file, response):
     m_plot = []
     cat_con = []
     file = []
-    # mean_unweighted = []
-    # mean_weighted = []
+    mean_unweighted = []
+    mean_weighted = []
+    # msd_plot=[]
     for var in pred.columns:
         # Let's first calculate p-value and t-value
         if response_var_type == "Categorical":
@@ -94,7 +95,7 @@ def main(file, response):
         else:
             y = df["response"]
             predictor = statsmodels.api.add_constant(df[var])
-            logistic_regression_model = statsmodels.api.Logit(df["response"], predictor)
+            logistic_regression_model = statsmodels.api.Logit(y, predictor)
             logistic_regression_model_fitted = logistic_regression_model.fit()
             print(logistic_regression_model_fitted.summary())
 
@@ -107,7 +108,7 @@ def main(file, response):
             p_value.append(pvalue)
 
             # Plotting the figure
-            file_name = "assignment4/plots/ranking_" + var + ".html"
+            file_name = "assignment4/graph/ranking_" + var + ".html"
             m_plot.append("<a href=" + file_name + ">" + file_name + "</a>")
             # Plot the figure
             figure = px.scatter(x=df[var], y=y, trendline="ols")
@@ -168,21 +169,57 @@ def main(file, response):
             cat_con.append("Continuous")
             file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
-        """
-         # Mean Squared Difference
-        mean_unweighted.append(mean_uw)
-        mean_weighted.append(mean_w)
-        """
+        # Let's calculate weighted and unweighted mean squared difference.
+        pp = df.response.sum() / len(df)
+        if cat_or_bool(pred[var]):
+            output = pd.DataFrame()
+            bin1 = pd.DataFrame({"pred": df[var], "res": df["response"]}).groupby(
+                df[var]
+            )
+            output["total"] = bin1.count().res
+            population_pr = output["total"] / len(df)
+            output["mean1"] = bin1.sum().res / output.total
+            output["dif"] = (output.mean1 - pp) ** 2
+            output["dif_weighted"] = output.dif * population_pr
 
-        # Assigning everything to a dataframe
+            unweighted = output["dif"].sum()
+            weighted = output["dif_weighted"].sum()
+
+        else:
+            output = pd.DataFrame()
+            bin1 = pd.DataFrame(
+                {"pred": df[var], "res": df["response"], "Bucket": pd.qcut(df[var], 10)}
+            )
+            group = bin1.groupby("Bucket", as_index=True)
+            output["mean2"] = bin1.mean().pred
+            output["minimum"] = group.min().pred
+            output["max"] = group.max().pred
+            output["population_mean"] = pp
+            output["total"] = group.count().res
+            population_pr = output["total"] / len(df)
+            output["mean1"] = group.sum().res / output.total
+            output["dif"] = (output.mean1 - pp) ** 2
+            output["dif_weighted"] = output.dif * population_pr
+
+            unweighted = output["dif"].sum()
+            weighted = output["dif_weighted"].sum()
+
+            diff_mean_plot(output)
+            # msd_plot.append(plotmsd)
+        # Appending the values
+        mean_unweighted.append(unweighted)
+        mean_weighted.append(weighted)
+
+    # Assigning everything to a dataframe
     result["cat_con"] = cat_con
     result["t-value"] = t_value
     result["p-value"] = p_value
     result["m-plot"] = m_plot
     result["graphs"] = file
     result["Variable_importance"] = importance
-    # result['mean_unweighted']= mean_unweighted
-    # result['mean_weighted']= mean_weighted
+    result["mean_unweighted"] = mean_unweighted
+    result["mean_weighted"] = mean_weighted
+    # result['msd_plot'] = msd_plot
 
     print(result)
     result.to_html("Bihare_Vaishnavi_Assignment4.html", render_links=True, escape=False)
@@ -202,11 +239,6 @@ def cat_or_bool(predictor):
         return True
     else:
         return False
-
-
-# def mean_of_response(df,col):
-# Three bins will be needed one to group everything up
-# other to create bins and third ont to store everything in different fields.
 
 
 def cont_cat_violin(df, col, file_name):
@@ -235,7 +267,7 @@ def cont_cat_violin(df, col, file_name):
     )
 
 
-def cat_con_dist(df, col, filename):
+def cat_con_dist(df, col, file_name):
     # Grouping
     groups = ["0", "1"]
     label0 = df[df["response"] == 0][col]
@@ -248,15 +280,45 @@ def cat_con_dist(df, col, filename):
         yaxis_title="Distribution",
     )
     plot.write_html(
-        file=filename,
+        file=file_name,
+        include_plotlyjs="cdn",
+    )
+
+
+# https://plotly.com/python/multiple-axes/ ##very helpful
+def diff_mean_plot(df):
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    fig.add_trace(
+        graph_objects.Bar(x=df["mean1"], y=df["total"]),
+        secondary_y=False,
+    )
+
+    fig.add_trace(
+        graph_objects.Scatter(
+            x=df["mean2"], y=df["mean1"], line=dict(color="green"), name="mean"
+        ),
+        secondary_y=True,
+    )
+    fig.add_trace(
+        graph_objects.Scatter(
+            x=df["mean2"],
+            y=df["population_mean"],
+            line=dict(color="red"),
+            name="PopulationMean",
+        ),
+        secondary_y=True,
+    )
+    fig.update_layout(height=500, width=850, title_text="Difference in mean")
+    fig.write_html(
+        file="assignment4/graph/mean_diff.html",
         include_plotlyjs="cdn",
     )
 
 
 if __name__ == "__main__":
-    file = "data.csv"
-    response = "diagnosis"
-
-    # file = sys.argv[1]
-    # response = sys.argv[2]
+    # file = "data.csv"
+    # response = "diagnosis"
+    file = sys.argv[1]
+    response = sys.argv[2]
     sys.exit(main(file, response))
