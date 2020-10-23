@@ -1,7 +1,6 @@
 import os
 import sys
 
-import matplotlib.pyplot as plt
 import numpy
 import pandas as pd
 import statsmodels
@@ -60,8 +59,9 @@ def main(file, response):
     file = []
     mean_unweighted = []
     mean_weighted = []
-    # msd_plot=[]
+    msd_plot = []
     for var in pred.columns:
+        var_proper = var.replace(" ", "-").replace("/", "-")
         # Let's first calculate p-value and t-value
         if response_var_type == "Categorical":
             y = df["response"]
@@ -86,12 +86,9 @@ def main(file, response):
                 yaxis_title="y",
             )
 
-            figure.write_html(
-                file=f"assignment4/graph/ranking_{var}.html", include_plotlyjs="cdn"
-            )
-            filepath = "assignment4/graph/ranking_" + var + ".html"
-            m_plot.append("<a href=" + filepath + ">" + filepath + "</a>")
-
+            file_name = f"assignment4/graph/ranking_{var_proper}.html"
+            figure.write_html(file=file_name, include_plotlyjs="cdn")
+            m_plot.append("<a href=" + file_name + ">" + file_name + "</a>")
         else:
             y = df["response"]
             predictor = statsmodels.api.add_constant(df[var])
@@ -108,21 +105,18 @@ def main(file, response):
             p_value.append(pvalue)
 
             # Plotting the figure
-            file_name = "assignment4/graph/ranking_" + var + ".html"
-            m_plot.append("<a href=" + file_name + ">" + file_name + "</a>")
-            # Plot the figure
             figure = px.scatter(x=df[var], y=y, trendline="ols")
             figure.update_layout(
                 title=f"Variable: {var}: (t-value={tvalue}) (p-value={pvalue})",
                 xaxis_title=f"Variable: {var}",
                 yaxis_title="y",
             )
-            figure.write_html(
-                file=f"assignment4/graph/ranking_{var}.html", include_plotlyjs="cdn"
-            )
+            file_name = f"assignment4/graph/ranking_{var_proper}.html"
+            figure.write_html(file=file_name, include_plotlyjs="cdn")
+            m_plot.append("<a href=" + file_name + ">" + file_name + "</a>")
 
-        if cat_or_bool(pred[var]) and response_var_type == "Boolean":
-            fpath = "assignment4/graph/cat_cat_heatmap" + var + ".html"
+        if cat_or_con(pred[var]) and response_var_type == "Boolean":
+            fpath = "assignment4/graph/cat_cat_heatmap" + var_proper + ".html"
 
             cm = confusion_matrix(var, df["response"])
             plot = graph_objects.Figure(data=graph_objects.Heatmap(z=cm, zmax=cm.max()))
@@ -140,75 +134,147 @@ def main(file, response):
             )
 
             cat_con.append("Categorical")
-            file.append("")
+            file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
-        elif not cat_or_bool(pred[var]) and response_var_type == "Boolean":
-            fpath = "assignment4/graph/cat_con_dist" + var + ".html"
+        elif not cat_or_con(pred[var]) and response_var_type == "Boolean":
+            fpath = "assignment4/graph/cat_con_dist" + var_proper + ".html"
             cat_con_dist(df, var, fpath)
             cat_con.append("Continuous")
             file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
-        elif cat_or_bool(pred[var]) and response_var_type != "Boolean":
-            fpath = "assignment4/graph/con_cat_violin" + var + ".html"
+        elif not cat_or_con(pred[var]) and response_var_type != "Boolean":
+            fpath = "assignment4/graph/con_con_scatter" + var_proper + ".html"
+            cat_con_scatter(df, var, fpath)
+            cat_con.append("Continuous")
+            file.append("<a href=" + fpath + ">" + fpath + "</a>")
+
+        else:
+            fpath = "assignment4/graph/con_cat_violin" + var_proper + ".html"
             cont_cat_violin(df, var, fpath)
             cat_con.append("Categorical")
             file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
-        elif not cat_or_bool(pred[var]) and response_var_type != "Boolean":
-            fpath = "assignment4/graph/con_con_scatter" + var + ".html"
-
-            plot1 = df.plot(kind="scatter", x=var, y=df["response"])
-            plt.xlabel("Predictor")
-            plt.ylabel("Response")
-            plt.title("Continuous/Continuous")
-            plot1.write_html(
-                file=fpath,
-                include_plotlyjs="cdn",
-            )
-
-            cat_con.append("Continuous")
-            file.append("<a href=" + fpath + ">" + fpath + "</a>")
-
         # Let's calculate weighted and unweighted mean squared difference.
         pp = df.response.sum() / len(df)
-        if cat_or_bool(pred[var]):
-            output = pd.DataFrame()
-            bin1 = pd.DataFrame({"pred": df[var], "res": df["response"]}).groupby(
-                df[var]
-            )
-            output["total"] = bin1.count().res
-            population_pr = output["total"] / len(df)
-            output["mean1"] = bin1.sum().res / output.total
+        output = pd.DataFrame()
+        if cat_or_con(pred[var]):
+            bin1 = pd.DataFrame({"pred": df[var], "res": df["response"]})
+            group = bin1.groupby(df[var])
+            output["total"] = group["res"].count()
+            output["mean1"] = group["res"].mean()
+            output["mean2"] = group["pred"].mean()
+            output["pp_mean"] = pp
+            output["pop_pro"] = output["total"] / sum(output["total"])
             output["dif"] = (output.mean1 - pp) ** 2
-            output["dif_weighted"] = output.dif * population_pr
+            output["dif_weighted"] = output.dif * output.pop_pro
 
             unweighted = output["dif"].sum()
             weighted = output["dif_weighted"].sum()
 
+            # Appending the values
+            mean_unweighted.append(unweighted)
+            mean_weighted.append(weighted)
+
+            msdplot = make_subplots(specs=[[{"secondary_y": True}]])
+            msdplot.add_trace(
+                graph_objects.Bar(
+                    x=output["mean2"],
+                    y=output["total"],
+                    name=" Histogram ",
+                ),
+                secondary_y=False,
+            )
+            msdplot.add_trace(
+                graph_objects.Scatter(
+                    x=output["mean2"],
+                    y=output["mean1"],
+                    name=" BinMean ",
+                    line=dict(color="red"),
+                ),
+                secondary_y=True,
+            )
+            msdplot.add_trace(
+                graph_objects.Scatter(
+                    x=output["mean2"],
+                    y=output["pp_mean"],
+                    name="PopulationMean",
+                    line=dict(color="green"),
+                ),
+                secondary_y=True,
+            )
+            msdplot.write_html(
+                file=f"assignment4/graph/msd{var}.html",
+                include_plotlyjs="cdn",
+            )
+            msd_plot.append(
+                "<a href ="
+                + "assignment4/graph/msd"
+                + var
+                + ".html"
+                + ">"
+                + f"assignment4/graph/msd"
+                + var
+                + "</a>"
+            )
         else:
-            output = pd.DataFrame()
             bin1 = pd.DataFrame(
                 {"pred": df[var], "res": df["response"], "Bucket": pd.qcut(df[var], 10)}
             )
             group = bin1.groupby("Bucket", as_index=True)
-            output["mean2"] = bin1.mean().pred
-            output["minimum"] = group.min().pred
-            output["max"] = group.max().pred
-            output["population_mean"] = pp
-            output["total"] = group.count().res
-            population_pr = output["total"] / len(df)
-            output["mean1"] = group.sum().res / output.total
+            output["total"] = group["res"].count()
+            output["mean1"] = group["res"].mean()
+            output["mean2"] = group["pred"].mean()
+            output["pp_mean"] = pp
+            output["pop_pro"] = output["total"] / sum(output["total"])
             output["dif"] = (output.mean1 - pp) ** 2
-            output["dif_weighted"] = output.dif * population_pr
+            output["dif_weighted"] = output.dif * output.pop_pro
 
             unweighted = output["dif"].sum()
             weighted = output["dif_weighted"].sum()
-
-            diff_mean_plot(output)
-            # msd_plot.append(plotmsd)
-        # Appending the values
-        mean_unweighted.append(unweighted)
-        mean_weighted.append(weighted)
+            # Appending the values
+            mean_unweighted.append(unweighted)
+            mean_weighted.append(weighted)
+            msdplot = make_subplots(specs=[[{"secondary_y": True}]])
+            msdplot.add_trace(
+                graph_objects.Bar(
+                    x=output["mean2"],
+                    y=output["total"],
+                    name=" Histogram ",
+                ),
+                secondary_y=False,
+            )
+            msdplot.add_trace(
+                graph_objects.Scatter(
+                    x=output["mean2"],
+                    y=output["mean1"],
+                    name=" BinMean ",
+                    line=dict(color="red"),
+                ),
+                secondary_y=True,
+            )
+            msdplot.add_trace(
+                graph_objects.Scatter(
+                    x=output["mean2"],
+                    y=output["pp_mean"],
+                    name="PopulationMean",
+                    line=dict(color="green"),
+                ),
+                secondary_y=True,
+            )
+            msdplot.write_html(
+                file=f"assignment4/graph/msd{var}.html",
+                include_plotlyjs="cdn",
+            )
+            msd_plot.append(
+                "<a href ="
+                + "assignment4/graph/msd"
+                + var
+                + ".html"
+                + ">"
+                + f"assignment4/graph/msd"
+                + var
+                + "</a>"
+            )
 
     # Assigning everything to a dataframe
     result["cat_con"] = cat_con
@@ -219,7 +285,7 @@ def main(file, response):
     result["Variable_importance"] = importance
     result["mean_unweighted"] = mean_unweighted
     result["mean_weighted"] = mean_weighted
-    # result['msd_plot'] = msd_plot
+    result["msd_plot"] = msd_plot
 
     print(result)
     result.to_html("Bihare_Vaishnavi_Assignment4.html", render_links=True, escape=False)
@@ -232,7 +298,7 @@ def continuous_or_boolean(df):
         return "Boolean"
 
 
-def cat_or_bool(predictor):
+def cat_or_con(predictor):
     if predictor.dtypes == "object":
         return True
     elif predictor.nunique() / predictor.count() < 0.05:
@@ -285,36 +351,20 @@ def cat_con_dist(df, col, file_name):
     )
 
 
-# https://plotly.com/python/multiple-axes/ ##very helpful
-def diff_mean_plot(df):
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-
-    fig.add_trace(
-        graph_objects.Bar(x=df["mean1"], y=df["total"]),
-        secondary_y=False,
+def cat_con_scatter(df, col, file_name):
+    plot = px.scatter(x=df[col], y=df["response"], trendline="ols")
+    plot.update_layout(
+        title="Continuous Response by Continuous Predictor ",
+        xaxis_title="Predictor",
+        yaxis_title="Response",
     )
-
-    fig.add_trace(
-        graph_objects.Scatter(
-            x=df["mean2"], y=df["mean1"], line=dict(color="green"), name="mean"
-        ),
-        secondary_y=True,
-    )
-    fig.add_trace(
-        graph_objects.Scatter(
-            x=df["mean2"],
-            y=df["population_mean"],
-            line=dict(color="red"),
-            name="PopulationMean",
-        ),
-        secondary_y=True,
-    )
-    fig.update_layout(height=500, width=850, title_text="Difference in mean")
-    fig.write_html(
-        file="assignment4/graph/mean_diff.html",
+    plot.write_html(
+        file=file_name,
         include_plotlyjs="cdn",
     )
 
+
+# https://plotly.com/python/multiple-axes/ ##very helpful
 
 if __name__ == "__main__":
     # file = "data.csv"

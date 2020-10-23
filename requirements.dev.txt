@@ -70,7 +70,7 @@ pywin32==228              # via jupyter-core
 pywinpty==0.5.7           # via terminado
 pyyaml==5.3.1             # via detect-secrets, pre-commit
 pyzmq==19.0.2             # via jupyter-client, notebook
-regex==2020.10.15         # via black
+regex==2020.10.23         # via black
 requests==2.24.0          # via detect-secrets, jupyterlab-server
 send2trash==1.5.0         # via notebook
 six==1.15.0               # via argon2-cffi, bleach, jsonschema, packaging, pip-tools, python-dateutil, virtualenv
@@ -81,7 +81,7 @@ tornado==6.0.4            # via ipykernel, jupyter-client, jupyterlab, notebook,
 traitlets==5.0.5          # via ipykernel, ipython, jupyter-client, jupyter-core, nbclient, nbconvert, nbformat, notebook
 typed-ast==1.4.1          # via black
 typing-extensions==3.7.4.3  # via black
-urllib3==1.25.10          # via requests
+urllib3==1.25.11          # via requests
 virtualenv==20.0.35       # via pre-commit
 wcwidth==0.2.5            # via prompt-toolkit
 webencodings==0.5.1       # via bleach
