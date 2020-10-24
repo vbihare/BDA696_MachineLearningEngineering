@@ -6,10 +6,9 @@ import matplotlib.pyplot as plt
 import numpy
 import pandas as pd
 import seaborn as sns
-from plotly import express as px
-from plotly import figure_factory, graph_objects
 from scipy import stats
-from sklearn.metrics import confusion_matrix
+
+import Assignment4_FeatureEngineering as a4
 
 
 def main(file, response):
@@ -47,7 +46,7 @@ def main(file, response):
             file_path = (
                 "midterm/con_predictor_cat_response_distplot" + cols_proper + ".html"
             )
-            cat_con_dist(df, cols, file_path)
+            a4.cat_con_dist(df, cols, file_path)
             path = "<a href=" + file_path + ">" + cols
 
             column_plot[cols] = path
@@ -55,7 +54,7 @@ def main(file, response):
             file_path = (
                 "midterm/con_predictor_con_response_scatterplot" + cols_proper + ".html"
             )
-            cat_con_scatter(df, cols, file_path)
+            a4.cat_con_scatter(df, cols, file_path)
             path = "<a href=" + file_path + ">" + cols
 
             column_plot[cols] = path
@@ -66,7 +65,7 @@ def main(file, response):
             file_path = (
                 "midterm/cat_predictor_cat_response_heatmap" + cols_proper + ".html"
             )
-            cat_con_heatmap(df, cols, file_path)
+            a4.cat_con_heatmap(df, cols, file_path)
             path = "<a href=" + file_path + ">" + cols
 
             column_plot[cols] = path
@@ -74,7 +73,7 @@ def main(file, response):
             file_path = (
                 "midterm/cat_predictor_con_response_violinplot" + cols_proper + ".html"
             )
-            cat_con_violin(df, cols, file_path)
+            a4.cat_con_violin(df, cols, file_path)
             path = "<a href=" + file_path + ">" + cols
 
             column_plot[cols] = path
@@ -95,12 +94,7 @@ def main(file, response):
     plt.clf()
 
     with open("midterm/correlation_con_con.html", "w") as _file:
-        _file.write(
-            con_con_cor.to_html(render_links=True, escape=False)
-            + "<br>"
-            + "<h1> Continuous Continuous Correlation Plot </h1> "
-            + "<img src='midterm/correlation/con_con_corr.png"
-        )
+        _file.write(con_con_cor.to_html(render_links=True, escape=False))
 
     cat_cat_cor, cat_cat_matrix = cat_cat_corr(catdata, df, column_plot)
     # Sorting and printing the correlation matrix
@@ -110,16 +104,11 @@ def main(file, response):
     cat_cat_matrix = cat_cat_matrix.astype(float)
     plot2 = sns.heatmap(cat_cat_matrix, annot=False)
     corr3 = plot2.get_figure()
-    corr3.savefig("midterm/cat_cat_corr.png")
+    corr3.savefig("midterm/correlation/cat_cat_corr.png")
     plt.clf()
 
     with open("midterm/correlation_cat_cat.html", "w") as _file:
-        _file.write(
-            cat_cat_cor.to_html(render_links=True, escape=False)
-            + "<br>"
-            + "<h1> Categorical Categorical Correlation Plot </h1> "
-            + "<img src='midterm/cat_cat_corr.png'"
-        )
+        _file.write(cat_cat_cor.to_html(render_links=True, escape=False))
 
     cat_con_cor, cat_con_matrix = cat_con_corr(catdata, condata, df, column_plot)
     # Sorting and printing the correlation matrix
@@ -130,14 +119,19 @@ def main(file, response):
     cat_con_matrix = cat_con_matrix.astype(float)
     plot1 = sns.heatmap(cat_con_matrix, annot=False)
     corr2 = plot1.get_figure()
-    corr2.savefig("midterm/cat_con_corr.png")
+    corr2.savefig("midterm/correlation/cat_con_corr.png")
     plt.clf()
     with open("midterm/correlation_cat_con.html", "w") as _file:
+        _file.write(cat_con_cor.to_html(render_links=True, escape=False))
+
+    with open("midterm/correlation/correlation_plot.html", "w") as _file:
         _file.write(
-            cat_con_cor.to_html(render_links=True, escape=False)
-            + "<br>"
-            + "<h1> Categorical Continuous Correlation Plot </h1> "
-            + "<img src='midterm/cat_con_corr.png'"
+            "<h1> Continuous Continuous Plot </h1> "
+            + "<img src='con_con_corr.png'"
+            + "<h1> Categorical Continuous Plot </h1> "
+            + "<img src = 'cat_con_corr.png'"
+            + "<h1> Categorical Categorical Plot </h1>"
+            + "<img src ='cat_cat_corr.png'"
         )
 
 
@@ -155,80 +149,6 @@ def cat_or_con(predictor):
         return True
     else:
         return False
-
-
-def cat_con_violin(df, col, file_name):
-    # Grouping
-    groups = ["0", "1"]
-    plot = graph_objects.Figure()
-    label0 = df[df["response"] == 0][col]
-    label1 = df[df["response"] == 1][col]
-    for curr_hist, curr_group in zip([label0, label1], groups):
-        plot.add_trace(
-            graph_objects.Violin(
-                x=numpy.repeat(curr_group, len(df)),
-                y=curr_hist,
-                name=int(curr_group),
-            )
-        )
-    # Let's give out the titles and other details to our graph
-    plot.update_layout(
-        title="Continuous Response by Categorical Predictor",
-        xaxis_title="Groups",
-        yaxis_title="Response",
-    )
-    plot.write_html(
-        file=file_name,
-        include_plotlyjs="cdn",
-    )
-
-
-def cat_con_dist(df, col, file_name):
-    # Grouping
-    groups = ["0", "1"]
-    label0 = df[df["response"] == 0][col]
-    label1 = df[df["response"] == 1][col]
-
-    plot = figure_factory.create_distplot([label0, label1], groups)
-    plot.update_layout(
-        title="Continuous Predictor by Categorical Response",
-        xaxis_title="Predictors",
-        yaxis_title="Distribution",
-    )
-    plot.write_html(
-        file=file_name,
-        include_plotlyjs="cdn",
-    )
-
-
-def cat_con_scatter(df, col, file_name):
-    plot = px.scatter(x=df[col], y=df["response"], trendline="ols")
-    plot.update_layout(
-        title="Continuous Response by Continuous Predictor ",
-        xaxis_title="Predictor",
-        yaxis_title="Response",
-    )
-    plot.write_html(
-        file=file_name,
-        include_plotlyjs="cdn",
-    )
-
-
-def cat_con_heatmap(df, col, file_name):
-    cm = confusion_matrix(col, df["response"])
-    plot = graph_objects.Figure(data=graph_objects.Heatmap(z=cm, zmax=cm.max()))
-
-    # Let's give out the titles and other details to our graph
-    plot.update_layout(
-        title="Categorical Predictor by Categorical Response ",
-        xaxis_title="Response",
-        yaxis_title="Predictor",
-    )
-
-    plot.write_html(
-        file=file_name,
-        include_plotlyjs="cdn",
-    )
 
 
 def cat_con_list(pred, df):
@@ -403,8 +323,6 @@ def cat_cat_corr(cat_data, df, correlation_plot):
 
     return cat_cat_corr, cat_cat_matrix
 
-
-# https://plotly.com/python/multiple-axes/ ##very helpful
 
 if __name__ == "__main__":
     # file = "auto-mpg.csv"
