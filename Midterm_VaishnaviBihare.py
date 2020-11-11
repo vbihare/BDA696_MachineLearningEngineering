@@ -20,8 +20,8 @@ def main(file, response):
     pred = df.drop("response", axis=1)
 
     # Let's make a folder to store our plots
-    if not os.path.exists("midterm/plots"):
-        os.makedirs("midterm/plots")
+    if not os.path.exists("midterm"):
+        os.makedirs("midterm")
 
     # Let's check if the response variable is Continuous or Boolean
     response_var_type = continuous_or_boolean(df)
@@ -43,17 +43,13 @@ def main(file, response):
     for cols in condata:
         cols_proper = cols.replace(" ", "-").replace("/", "-")
         if response_var_type == "Boolean":
-            file_path = (
-                "midterm/con_predictor_cat_response_distplot" + cols_proper + ".html"
-            )
+            file_path = "con_predictor_cat_response_distplot" + cols_proper + ".html"
             a4.cat_con_dist(df, cols, file_path)
             path = "<a href=" + file_path + ">" + cols
 
             column_plot[cols] = path
         else:
-            file_path = (
-                "midterm/con_predictor_con_response_scatterplot" + cols_proper + ".html"
-            )
+            file_path = "con_predictor_con_response_scatterplot" + cols_proper + ".html"
             a4.cat_con_scatter(df, cols, file_path)
             path = "<a href=" + file_path + ">" + cols
 
@@ -62,17 +58,13 @@ def main(file, response):
     for cols in catdata:
         cols_proper = cols.replace(" ", "-").replace("/", "-")
         if response_var_type == "Boolean":
-            file_path = (
-                "midterm/cat_predictor_cat_response_heatmap" + cols_proper + ".html"
-            )
+            file_path = "cat_predictor_cat_response_heatmap" + cols_proper + ".html"
             a4.cat_con_heatmap(df, cols, file_path)
             path = "<a href=" + file_path + ">" + cols
 
             column_plot[cols] = path
         else:
-            file_path = (
-                "midterm/cat_predictor_con_response_violinplot" + cols_proper + ".html"
-            )
+            file_path = "cat_predictor_con_response_violinplot" + cols_proper + ".html"
             a4.cat_con_violin(df, cols, file_path)
             path = "<a href=" + file_path + ">" + cols
 
@@ -145,7 +137,7 @@ def continuous_or_boolean(df):
 def cat_or_con(predictor):
     if predictor.dtypes == "object":
         return True
-    elif predictor.nunique() / predictor.count() < 0.05:
+    elif predictor.nunique() < 5:
         return True
     else:
         return False
@@ -254,7 +246,7 @@ def cat_cont_correlation_ratio(categories, values):
     y_avg_array = numpy.zeros(cat_num)
     n_array = numpy.zeros(cat_num)
     for i in range(0, cat_num):
-        cat_measures = values[numpy.argwhere(f_cat == i).flatten()]
+        cat_measures = values.iloc[numpy.argwhere(f_cat == i).flatten()]
         n_array[i] = len(cat_measures)
         y_avg_array[i] = numpy.average(cat_measures)
     y_total_avg = numpy.sum(numpy.multiply(y_avg_array, n_array)) / numpy.sum(n_array)
@@ -325,8 +317,8 @@ def cat_cat_corr(cat_data, df, correlation_plot):
 
 
 if __name__ == "__main__":
-    # file = "auto-mpg.csv"
-    # response = "mpg"
-    file = sys.argv[1]
-    response = sys.argv[2]
+    file = "auto-mpg.csv"
+    response = "mpg"
+    # file = sys.argv[1]
+    # response = sys.argv[2]
     sys.exit(main(file, response))
