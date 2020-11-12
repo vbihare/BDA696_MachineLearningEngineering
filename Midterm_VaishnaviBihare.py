@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy
 import pandas as pd
 import seaborn as sns
+from plotly import graph_objects
 from scipy import stats
 
 import Assignment4_FeatureEngineering as a4
@@ -73,7 +74,7 @@ def main(file, response):
     if not os.path.exists("midterm/correlation"):
         os.makedirs("midterm/correlation")
 
-    con_con_cor, con_con_matrix = con_con_corr(condata, df, column_plot)
+    con_con_cor, con_con_matrix, con_con_msd = con_con_corr(condata, df, column_plot)
     # Sorting and printing the correlation matrix
     print("Continuous-Continuous Correlation metrics")
     con_con_cor.sort_values(by=["Correlation"], inplace=True, ascending=False)
@@ -88,7 +89,7 @@ def main(file, response):
     with open("midterm/correlation_con_con.html", "w") as _file:
         _file.write(con_con_cor.to_html(render_links=True, escape=False))
 
-    cat_cat_cor, cat_cat_matrix = cat_cat_corr(catdata, df, column_plot)
+    cat_cat_cor, cat_cat_matrix, cat_cat_msd = cat_cat_corr(catdata, df, column_plot)
     # Sorting and printing the correlation matrix
     print("Categorical-Categorical Correlation metrics")
     cat_cat_cor.sort_values(by=["Correlation"], inplace=True, ascending=False)
@@ -102,7 +103,9 @@ def main(file, response):
     with open("midterm/correlation_cat_cat.html", "w") as _file:
         _file.write(cat_cat_cor.to_html(render_links=True, escape=False))
 
-    cat_con_cor, cat_con_matrix = cat_con_corr(catdata, condata, df, column_plot)
+    cat_con_cor, cat_con_matrix, cat_con_msd = cat_con_corr(
+        catdata, condata, df, column_plot
+    )
     # Sorting and printing the correlation matrix
     print("Categorical-Continuous Correlation metrics")
     cat_con_cor.sort_values(by=["Correlation"], inplace=True, ascending=False)
@@ -125,6 +128,27 @@ def main(file, response):
             + "<h1> Categorical Categorical Plot </h1>"
             + "<img src ='cat_cat_corr.png'"
         )
+        # Brute-Force
+        # Cont-Cont Diff of mean
+        msd_contcont = con_con_msd.sort_values(by="MeanSqDiffW", ascending=False)
+        print(msd_contcont)
+
+        # Cat-Cont Diff of mean
+        msd_catcont = con_con_msd.sort_values(by="MeanSqDiffW", ascending=False)
+        print(msd_catcont)
+
+        # Cat-Cat
+        msd_catcat = cat_cat_msd.sort_values(by="MeanSqDiffW", ascending=False)
+        print(msd_catcat)
+
+        with open("midterm/BruteForce.html", "w") as _file:
+            _file.write(
+                msd_contcont.to_html(render_links=True, escape=False)
+                + "<br>"
+                + msd_catcont.to_html(render_links=True, escape=False)
+                + "<br>"
+                + msd_catcat.to_html(render_links=True, escape=False)
+            )
 
 
 def continuous_or_boolean(df):
@@ -159,9 +183,18 @@ def cat_con_list(pred, df):
 
 
 def con_con_corr(cont_data, df, correlation_plot):
+    final_col = [
+        "Cont_var1",
+        "Cont_var2",
+        "MeanSquareDiff",
+        "MeanSquareDiffWeighted",
+        "PLot",
+    ]
     con_con_matrix = pd.DataFrame(index=cont_data, columns=cont_data)
     cols = ["Cont_var1", "Cont_var2", "Correlation"]
     cont_cont_corr = pd.DataFrame(columns=cols)
+    msd_con_con = pd.DataFrame(columns=final_col)
+    pop_prop_1 = df.response.sum() / len(df)
     for var in range(len(cont_data)):
         for var2 in range(var, len(cont_data)):
             if cont_data[var] != cont_data[var2]:
@@ -184,7 +217,25 @@ def con_con_corr(cont_data, df, correlation_plot):
                     ),
                     ignore_index=True,
                 )
-    return cont_cont_corr, con_con_matrix
+                weighted, unweighted, data = get_msd(
+                    cont_data[var], cont_data[var2], df, pop_prop_1, 1
+                )
+                msd_con_con = msd_con_con.append(
+                    dict(
+                        zip(
+                            final_col,
+                            [
+                                cont_data[var],
+                                cont_data[var2],
+                                weighted,
+                                unweighted,
+                                data,
+                            ],
+                        )
+                    ),
+                    ignore_index=True,
+                )
+    return cont_cont_corr, con_con_matrix, msd_con_con
 
 
 def fill_na(data):
@@ -265,6 +316,15 @@ def cat_cont_correlation_ratio(categories, values):
 
 def cat_con_corr(cat_data, cont_data, df, correlation_plot):
     cat_con_matrix = pd.DataFrame(index=cat_data, columns=cont_data)
+    pop_prop_1 = df.response.sum() / len(df)
+    final_col = [
+        "Cat_var1",
+        "Cont_var2",
+        "MeanSquareDiff",
+        "MeanSquareDiffWeighted",
+        "PLot",
+    ]
+    msd_cat_con = pd.DataFrame(columns=final_col)
     cols = ["Cat_var", "Con_var", "Correlation"]
     cat_con_cor = pd.DataFrame(columns=cols)
     for var in range(len(cat_data)):
@@ -286,12 +346,33 @@ def cat_con_corr(cat_data, cont_data, df, correlation_plot):
                 ),
                 ignore_index=True,
             )
+            weighted, unweighted, data = get_msd(
+                cont_data[var], cont_data[var2], df, pop_prop_1, 2
+            )
+            msd_cat_con = msd_cat_con.append(
+                dict(
+                    zip(
+                        final_col,
+                        [cat_data[var], cont_data[var2], weighted, unweighted, data],
+                    )
+                ),
+                ignore_index=True,
+            )
 
-    return cat_con_cor, cat_con_matrix
+    return cat_con_cor, cat_con_matrix, msd_cat_con
 
 
 def cat_cat_corr(cat_data, df, correlation_plot):
     cat_cat_matrix = pd.DataFrame(index=cat_data, columns=cat_data)
+    pop_prop_1 = df.response.sum() / len(df)
+    final_col = [
+        "Cat_var1",
+        "Cat_var2",
+        "MeanSquareDiff",
+        "MeanSquareDiffWeighted",
+        "PLot",
+    ]
+    msd_cat_cat = pd.DataFrame(columns=final_col)
     cols = ["Cat_var1", "Cat_var2", "Correlation"]
     cat_cat_corr = pd.DataFrame(columns=cols)
     for var in range(len(cat_data)):
@@ -312,13 +393,96 @@ def cat_cat_corr(cat_data, df, correlation_plot):
                 ),
                 ignore_index=True,
             )
+            weighted, unweighted, data = get_msd(
+                cat_data[var], cat_data[var2], df, pop_prop_1, 2
+            )
+            msd_cat_cat = msd_cat_cat.append(
+                dict(
+                    zip(
+                        final_col,
+                        [cat_data[var], cat_data[var2], weighted, unweighted, data],
+                    )
+                ),
+                ignore_index=True,
+            )
 
-    return cat_cat_corr, cat_cat_matrix
+    return cat_cat_corr, cat_cat_matrix, msd_cat_cat
+
+
+def msd_cat_cont(cat_col, cont_col, inp_data):
+    bin1 = pd.DataFrame(
+        {
+            "X1": inp_data[cat_col],
+            "X2": inp_data[cont_col],
+            "Y": inp_data["response"],
+            "Bucket": pd.qcut(inp_data[cont_col], 3),
+        }
+    )
+    bin2 = bin1.groupby(["X1", "Bucket"]).agg({"Y": ["count", "mean"]}).reset_index()
+    return bin2
+
+
+def msd_cont_cont(col1, col2, inp_data):
+    bin1 = pd.DataFrame(
+        {
+            "X1": inp_data[col1],
+            "X2": inp_data[col2],
+            "Y": inp_data["response"],
+            "Bucket1": pd.qcut(inp_data[col1], 3),
+            "Bucket2": pd.qcut(inp_data[col2], 3),
+        }
+    )
+    bin2 = (
+        bin1.groupby(["Bucket1", "Bucket2"]).agg({"Y": ["count", "mean"]}).reset_index()
+    )
+
+    return bin2
+
+
+def get_msd(col1, col2, inp_data, pop_prop_1, t):
+    if t == 3:
+        d1_c_c = pd.DataFrame(
+            {
+                "X1": inp_data[col1],
+                "X2": inp_data[col2],
+                "Y": inp_data["target"],
+            }
+        )
+        bin2 = d1_c_c.groupby(["X1", "X2"]).agg({"Y": ["count", "mean"]}).reset_index()
+
+    elif t == 2:
+        bin2 = msd_cat_cont(col1, col2, inp_data)
+    else:
+        bin2 = msd_cont_cont(col1, col2, inp_data)
+
+    bin2.columns = [col1, col2, "BinCount", "BinMean"]
+    pop_prop = bin2.BinCount / len(inp_data)
+    bin2["Mean_sq_diff"] = (bin2["BinMean"] - pop_prop_1) ** 2
+    bin2["Mean_sq_diffW"] = bin2.Mean_sq_diff * pop_prop
+
+    # Creating MSD plots
+    d_mat = bin2.pivot(index=col1, columns=col2, values="Mean_sq_diffW")
+    fig = graph_objects.Figure(data=[graph_objects.Surface(z=d_mat.values)])
+    fig.update_layout(
+        title=col1 + " " + col2 + " Plot",
+        autosize=True,
+        scene=dict(xaxis_title=col2, yaxis_title=col1, zaxis_title="target"),
+    )
+
+    filename = "midterm/BruteForce_Plot_" + col1 + "_" + col2 + ".html"
+    fig.write_html(
+        file=filename,
+        include_plotlyjs="cdn",
+    )
+
+    file_n = "midterm/BruteForce_Plot_" + col1 + "_" + col2 + ".html"
+    file_name = "<a href=" + file_n + ">Plot Link"
+    return bin2["Mean_sq_diff"].sum(), bin2["Mean_sq_diffW"].sum(), file_name
 
 
 if __name__ == "__main__":
-    file = "auto-mpg.csv"
-    response = "mpg"
+    file = "data.csv"
+    response = "diagnosis"
     # file = sys.argv[1]
     # response = sys.argv[2]
     sys.exit(main(file, response))
