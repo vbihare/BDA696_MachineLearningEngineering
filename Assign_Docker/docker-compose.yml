@@ -1,0 +1,26 @@
+version: "3.1"
+services:
+  assign_baseball:
+    image: mariadb
+    container_name: assign_baseball
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - MYSQL_ALLOW_EMPTY_PASSWORD="true"
+      - SQL_CLIENT_PORT=3307
+    volumes:
+      - ./:/Assign_Docker
+    ports:
+      - 3306
+    restart: unless-stopped
+  docker_rolling_avg:
+    container_name: docker_rolling_avg
+    depends_on:
+      - assign_baseball
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: docker_rolling_avg
+    environment:
+      PORT: "8080"
+    restart: unless-stopped
