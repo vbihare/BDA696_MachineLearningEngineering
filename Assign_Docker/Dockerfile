@@ -14,12 +14,6 @@ COPY ./docker_vb_bash.sh/ Assign_Docker/docker_vb_bash.sh
 # Coping the SQL script which gets us the Rolling average
 COPY ./docker_assign.sql/ Assign_Docker/docker_assign.sql
 
-RUN apt-get update \
-  && apt-get install --no-install-recommends --yes \
-     mysql-client \
-     wget \
-  && rm -rf /var/lib/apt/lists/*
-
 RUN chmod +x /Assign_Docker/docker_vb_bash.sh
 CMD ./Assign_Docker/docker_vb_bash.sh
 
