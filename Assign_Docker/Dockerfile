@@ -2,7 +2,9 @@
 
 FROM ubuntu
 RUN mkdir /Assign_Docker
-RUN chown 1000:1000 /Assign_Docker
+#RUN chown 1000:1000 /Assign_Docker
+# The above line is not required for general users, I was facing some system issue and getting
+# permission denied error, hence used this. The below line will be enough for generally running the script.
 RUN chmod a+x /Assign_Docker
 
 # Coping the baseball database
