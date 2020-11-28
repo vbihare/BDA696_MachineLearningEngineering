@@ -1,9 +1,11 @@
 version: "3.1"
 services:
-  assign_baseball:
-    image: mariadb
-    container_name: assign_baseball
+  assign_baseball_data:
+    image: mariadb #mariadb container
+    container_name: assign_baseball_data
     environment:
+      # Using the PUID and PGID allows our containers to map the container’s
+      # internal user to a user on the host machine
       - PUID=1000
       - PGID=1000
       - MYSQL_ALLOW_EMPTY_PASSWORD="true"
@@ -13,14 +15,14 @@ services:
     ports:
       - 3306
     restart: unless-stopped
-  docker_rolling_avg:
-    container_name: docker_rolling_avg
+  docker_rolling_avg_data:
+    container_name: docker_rolling_avy_data #rolling average container
     depends_on:
-      - assign_baseball
+      - assign_baseball_data
     build:
       context: .
       dockerfile: Dockerfile
-    image: docker_rolling_avg
+    image: docker_rolling_avg_data
     environment:
       PORT: "8080"
     restart: unless-stopped
