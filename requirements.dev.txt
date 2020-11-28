@@ -16,7 +16,6 @@ cffi==1.14.4              # via argon2-cffi
 cfgv==3.2.0               # via pre-commit
 chardet==3.0.4            # via requests
 click==7.1.2              # via black, pip-tools
-colorama==0.4.4           # via ipython
 decorator==4.4.2          # via ipython
 defusedxml==0.6.0         # via nbconvert
 detect-secrets==0.14.3    # via -r requirements.dev.in
@@ -54,11 +53,14 @@ packaging==20.5           # via bleach
 pandocfilters==1.4.3      # via nbconvert
 parso==0.7.1              # via jedi
 pathspec==0.8.1           # via black
+pathspec==0.8.0           # via black
+pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
 pip-tools==5.4.0          # via -r requirements.dev.in
 pre-commit==2.9.2         # via -r requirements.dev.in
 prometheus-client==0.9.0  # via notebook
 prompt-toolkit==3.0.8     # via ipython
+ptyprocess==0.6.0         # via pexpect, terminado
 pycodestyle==2.6.0        # via flake8
 pycparser==2.20           # via cffi
 pyflakes==2.2.0           # via flake8
