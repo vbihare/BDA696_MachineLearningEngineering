@@ -21,8 +21,8 @@ def main(file, response):
     pred = df.drop("response", axis=1)
 
     # Let's make a folder to store our plots
-    if not os.path.exists("assignment4/graph"):
-        os.makedirs("assignment4/graph")
+    if not os.path.exists("midterm/graph"):
+        os.makedirs("midterm/graph")
 
     # Let's check if the response variable is Continuous or Boolean
     response_var_type = continuous_or_boolean(df)
@@ -86,7 +86,7 @@ def main(file, response):
                 yaxis_title="y",
             )
 
-            file_name = f"assignment4/graph/ranking_{var_proper}.html"
+            file_name = f"midterm/graph/ranking_{var_proper}.html"
             figure.write_html(file=file_name, include_plotlyjs="cdn")
             m_plot.append("<a href=" + file_name + ">" + file_name + "</a>")
         else:
@@ -111,12 +111,12 @@ def main(file, response):
                 xaxis_title=f"Variable: {var}",
                 yaxis_title="y",
             )
-            file_name = f"assignment4/graph/ranking_{var_proper}.html"
+            file_name = f"midterm/graph/ranking_{var_proper}.html"
             figure.write_html(file=file_name, include_plotlyjs="cdn")
             m_plot.append("<a href=" + file_name + ">" + file_name + "</a>")
 
         if cat_or_con(pred[var]) and response_var_type == "Boolean":
-            fpath = "assignment4/graph/cat_cat_heatmap" + var_proper + ".html"
+            fpath = "midterm/graph/cat_cat_heatmap" + var_proper + ".html"
 
             cm = confusion_matrix(var, df["response"])
             plot = graph_objects.Figure(data=graph_objects.Heatmap(z=cm, zmax=cm.max()))
@@ -137,20 +137,20 @@ def main(file, response):
             file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
         elif not cat_or_con(pred[var]) and response_var_type == "Boolean":
-            fpath = "assignment4/graph/cat_con_dist" + var_proper + ".html"
+            fpath = "midterm/graph/cat_con_dist" + var_proper + ".html"
             cat_con_dist(df, var, fpath)
             cat_con.append("Continuous")
             file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
         elif not cat_or_con(pred[var]) and response_var_type != "Boolean":
-            fpath = "assignment4/graph/con_con_scatter" + var_proper + ".html"
+            fpath = "midterm/graph/con_con_scatter" + var_proper + ".html"
             cat_con_scatter(df, var, fpath)
             cat_con.append("Continuous")
             file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
         else:
-            fpath = "assignment4/graph/con_cat_violin" + var_proper + ".html"
-            cont_cat_violin(df, var, fpath)
+            fpath = "midterm/graph/con_cat_violin" + var_proper + ".html"
+            cat_con_violin(df, var, fpath)
             cat_con.append("Categorical")
             file.append("<a href=" + fpath + ">" + fpath + "</a>")
 
@@ -203,16 +203,16 @@ def main(file, response):
                 secondary_y=True,
             )
             msdplot.write_html(
-                file=f"assignment4/graph/msd{var}.html",
+                file=f"midterm/graph/msd{var}.html",
                 include_plotlyjs="cdn",
             )
             msd_plot.append(
                 "<a href ="
-                + "assignment4/graph/msd"
+                + "midterm/graph/msd"
                 + var
                 + ".html"
                 + ">"
-                + f"assignment4/graph/msd"
+                + f"midterm/graph/msd"
                 + var
                 + "</a>"
             )
@@ -262,16 +262,16 @@ def main(file, response):
                 secondary_y=True,
             )
             msdplot.write_html(
-                file=f"assignment4/graph/msd{var}.html",
+                file=f"midterm/graph/msd{var}.html",
                 include_plotlyjs="cdn",
             )
             msd_plot.append(
                 "<a href ="
-                + "assignment4/graph/msd"
+                + "midterm/graph/msd"
                 + var
                 + ".html"
                 + ">"
-                + f"assignment4/graph/msd"
+                + f"midterm/graph/msd"
                 + var
                 + "</a>"
             )
@@ -307,12 +307,12 @@ def cat_or_con(predictor):
         return False
 
 
-def cont_cat_violin(df, col, file_name):
+def cat_con_violin(df, col, file_name):
     # Grouping
     groups = ["0", "1"]
     plot = graph_objects.Figure()
-    label0 = df[df["target"] == 0][col]
-    label1 = df[df["target"] == 1][col]
+    label0 = df[df["response"] == 0][col]
+    label1 = df[df["response"] == 1][col]
     for curr_hist, curr_group in zip([label0, label1], groups):
         plot.add_trace(
             graph_objects.Violin(
@@ -324,7 +324,7 @@ def cont_cat_violin(df, col, file_name):
     # Let's give out the titles and other details to our graph
     plot.update_layout(
         title="Continuous Response by Categorical Predictor",
-        xaxis_title="Groupings",
+        xaxis_title="Groups",
         yaxis_title="Response",
     )
     plot.write_html(
@@ -342,7 +342,7 @@ def cat_con_dist(df, col, file_name):
     plot = figure_factory.create_distplot([label0, label1], groups)
     plot.update_layout(
         title="Continuous Predictor by Categorical Response",
-        xaxis_title="Predictor",
+        xaxis_title="Predictors",
         yaxis_title="Distribution",
     )
     plot.write_html(
@@ -358,6 +358,23 @@ def cat_con_scatter(df, col, file_name):
         xaxis_title="Predictor",
         yaxis_title="Response",
     )
+    plot.write_html(
+        file=file_name,
+        include_plotlyjs="cdn",
+    )
+
+
+def cat_con_heatmap(df, col, file_name):
+    cm = confusion_matrix(col, df["response"])
+    plot = graph_objects.Figure(data=graph_objects.Heatmap(z=cm, zmax=cm.max()))
+
+    # Let's give out the titles and other details to our graph
+    plot.update_layout(
+        title="Categorical Predictor by Categorical Response ",
+        xaxis_title="Response",
+        yaxis_title="Predictor",
+    )
+
     plot.write_html(
         file=file_name,
         include_plotlyjs="cdn",
