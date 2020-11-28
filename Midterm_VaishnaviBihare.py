@@ -394,7 +394,7 @@ def cat_cat_corr(cat_data, df, correlation_plot):
                 ignore_index=True,
             )
             weighted, unweighted, data = get_msd(
-                cat_data[var], cat_data[var2], df, pop_prop_1, 2
+                cat_data[var], cat_data[var2], df, pop_prop_1, 3
             )
             msd_cat_cat = msd_cat_cat.append(
                 dict(
@@ -445,7 +445,7 @@ def get_msd(col1, col2, inp_data, pop_prop_1, t):
             {
                 "X1": inp_data[col1],
                 "X2": inp_data[col2],
-                "Y": inp_data["target"],
+                "Y": inp_data["response"],
             }
         )
         bin2 = d1_c_c.groupby(["X1", "X2"]).agg({"Y": ["count", "mean"]}).reset_index()
@@ -481,8 +481,8 @@ def get_msd(col1, col2, inp_data, pop_prop_1, t):
 
 
 if __name__ == "__main__":
-    file = "data.csv"
-    response = "diagnosis"
+    file = "auto-mpg.csv"
+    response = "mpg"
     # file = sys.argv[1]
     # response = sys.argv[2]
     sys.exit(main(file, response))
