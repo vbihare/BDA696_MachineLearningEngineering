@@ -1,5 +1,6 @@
-FROM ubuntu
+# Set up the image, copy the essentials, run apt-get logic(slides), bash script.
 
+FROM ubuntu
 RUN mkdir /Assign_Docker
 RUN chown 1000:1000 /Assign_Docker
 RUN chmod a+x /Assign_Docker
