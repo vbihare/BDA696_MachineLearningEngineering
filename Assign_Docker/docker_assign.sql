@@ -23,5 +23,3 @@ create table if not exists rolling_avg as
 	group by ba1.game_id ,ba1.batter, ba1.local_dt);
 
 #Converting it into text file
-SELECT * from rolling_avg
-INTO OUTFILE '/Assign_Docker/rolling_avg_vb.txt';

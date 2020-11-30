@@ -8,15 +8,17 @@ RUN mkdir /Assign_Docker
 RUN chmod a+x /Assign_Docker
 
 # Coping the baseball database
-COPY ./baseball.sql/ Assign_Docker/baseball.sql
+COPY ./baseball.sql/ /Assign_Docker/baseball.sql
 
 # Coping our bash file
-COPY ./docker_vb_bash.sh/ Assign_Docker/docker_vb_bash.sh
+COPY ./docker_vb_bash.sh/ /Assign_Docker/docker_vb_bash.sh
 
 # Coping the SQL script which gets us the Rolling average
-COPY ./docker_assign.sql/ Assign_Docker/docker_assign.sql
+COPY ./docker_assign.sql/ /Assign_Docker/docker_assign.sql
 
 RUN chmod +x /Assign_Docker/docker_vb_bash.sh
-CMD ./Assign_Docker/docker_vb_bash.sh
 
+RUN apt-get update
+RUN apt-get install -y mysql-client
 
+CMD /Assign_Docker/docker_vb_bash.sh
