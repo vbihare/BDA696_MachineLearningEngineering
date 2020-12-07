@@ -80,7 +80,8 @@ select
 		,sum(tbc2.Sac_Fly)as Sac_Fly 
 		,sum(tbc2.Sac_Fly_DP)as Sac_Fly_DP 
 		,sum(tbc2.Sacrifice_Bunt_DP)as Sacrifice_Bunt_DP 
-		,SUM(tbc2.Single)as Single 
+		,SUM(tbc2.Single)as Single
+		,SUM(tbc2.Strikeout) as Strikeout 
 		,SUM(tbc2.`Strikeout_-_DP`)as `Strikeout_-_DP` 
 		,SUM(tbc2.`Strikeout_-_TP`)as `Strikeout_-_TP` 
 		,sum(tbc2.Triple)as Triple 
@@ -192,9 +193,10 @@ select
 		,sum(tbc2.Sac_Fly)as Sac_Fly 
 		,sum(tbc2.Sac_Fly_DP)as Sac_Fly_DP 
 		,sum(tbc2.Sacrifice_Bunt_DP)as Sacrifice_Bunt_DP 
-		,SUM(tbc2.Single)as Single 
-		,SUM(tbc2.`Strikeout_-DP`)as `Strikeout-_DP` 
-		,SUM(tbc2.`Strikeout_-TP`)as `Strikeout-_TP` 
+		,SUM(tbc2.Single)as Single
+		,SUM(tbc2.Strikeout) as Strikeout 
+		,SUM(tbc2.`Strikeout_-_DP`)as `Strikeout_-_DP` 
+		,SUM(tbc2.`Strikeout_-_TP`)as `Strikeout_-_TP` 
 		,sum(tbc2.Triple)as Triple 
 		,sum(tbc2.Triple_Play)as Triple_Play 
 		,sum(tbc2.Walk)as walk
@@ -220,8 +222,6 @@ join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.
 select g.home_team_id,g.away_team_id, g.game_id, (r2dh.Hit/r2dh.atBat) /(r2da.Hit/r2da.atBat) -1.0 as BA_Ratio, (r2dh.Hit/r2dh.atBat) - (r2da.Hit/r2da.atBat) as BA_diff
 from game g join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id
 join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id;
-
-select*from RollingAvgTable;
 
 
 #slugging percentage
@@ -262,12 +262,113 @@ from game g join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.gam
 join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id;
 
 # Total Average
-select g.home_team_id, g.game_id, (r2dh.Single + 2*r2dh.`Double` +3*r2dh.Triple + 4*r2dh.Home_Run ) as Total_Bases_home, 
+select g.home_team_id, g.game_id, 
 r2dh.Hit_By_Pitch, r2dh.walk, r2dh.stolenBaseHome, r2dh.caughtStealingHome, r2dh.atBat, r2dh.Hit, r2dh.Grounded_Into_DP,
 (((r2dh.Single + 2*r2dh.`Double` +3*r2dh.Triple + 4*r2dh.Home_Run )+ r2dh.Hit_By_Pitch+ r2dh.stolenBaseHome + r2dh.walk)/((r2dh.atBat- r2dh.Hit)
 + r2dh.caughtStealingHome+ r2dh.Grounded_Into_Dp)) as Total_Average
 from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id; 
 
 # Times on Bases
-select g.home_team_id, g.game_id, (r2dh.Hit+ r2dh.walk+ r2dh.Hit_By_Pitch) as Times_On_Bases
-from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id; 
+select g.home_team_id, g.game_id,g.away_team_id, (r2dh.Hit+ r2dh.walk+ r2dh.Hit_By_Pitch) as Times_On_Bases_home,
+(r2da.Hit+ r2da.walk+ r2da.Hit_By_Pitch) as Times_On_Bases_away
+from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id; 
+
+# On- Base Percentage
+select g.home_team_id, g.game_id,g.away_team_id, ((r2dh.Hit+ r2dh.Walk + r2dh.Hit_By_Pitch)/(r2dh.atBat+ r2dh.Walk+ r2dh.Hit_By_Pitch+ 
+r2dh.Sac_Fly)) as on_base_percentage_home,((r2da.Hit+ r2da.Walk + r2da.Hit_By_Pitch)/(r2da.atBat+ r2da.Walk+ r2da.Hit_By_Pitch+ r2da.Sac_Fly))
+as on_base_percentage_away
+from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id;
+
+# on-base plus Slugging
+select g.home_team_id, g.game_id, g.away_team_id, (((r2dh.atBat*(r2dh.Hit+ r2dh.Walk + r2dh.Hit_By_Pitch))+ ((r2dh.Single + 2*r2dh.`Double` 
++3*r2dh.Triple + 4*r2dh.Home_Run )*(r2dh.atBat+ r2dh.Walk+ r2dh.Hit_By_Pitch+ r2dh.Sac_Fly)))/(r2dh.atBat * (r2dh.atBat+ r2dh.Walk+ 
+r2dh.Hit_By_Pitch+ r2dh.Sac_Fly)))as on_base_plus_slugging_home, (((r2da.atBat*(r2da.Hit+ r2da.Walk + r2da.Hit_By_Pitch))+ ((r2da.Single + 2*r2da.`Double` 
++3*r2da.Triple + 4*r2dh.Home_Run )*(r2da.atBat+ r2da.Walk+ r2da.Hit_By_Pitch+ r2da.Sac_Fly)))/(r2da.atBat * (r2da.atBat+ r2da.Walk+ 
+r2da.Hit_By_Pitch+ r2da.Sac_Fly)))as on_base_plus_slugging_away
+from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id;
+
+# at-bats per home run
+select g.home_team_id, g.game_id, g.away_team_id, (r2dh.atBat/r2dh.Home_Run) as at_bats_perHR_home,(r2da.atBat/r2da.Home_Run) as at_bats_perHR_away
+from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id;
+
+#  Plate appearances per strikeout
+select g.home_team_id, g.game_id, g.away_team_id, (r2dh.plateAppearance/r2dh.Strikeout) as PA_per_SO_home,
+(r2da.plateAppearance/r2da.Strikeout) as PA_per_SO_away
+from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id;
+
+#  Walk to Strike out Ratio
+select g.home_team_id, g.game_id, g.away_team_id, (r2dh.walk/r2dh.Strikeout) as walk_SO_home,
+(r2da.walk/r2da.Strikeout) as walk_SO_away
+from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id;
+
+# Home runs per Hit
+select g.home_team_id, g.game_id, g.away_team_id, (r2dh.Home_Run/r2dh.Hit) as hr_h_home,
+(r2da.Home_Run/r2da.Hit) as hr_h_away
+from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id;
+
+# Stolen Base percentage home
+select g.home_team_id, g.game_id, g.away_team_id, (r2dh.stolenbasehome/(r2dh.stolenbasehome+ r2dh.caughtstealinghome)) as SB_percent_home ,
+(r2da.stolenbasehome/(r2da.stolenbasehome+ r2da.caughtstealinghome)) as SB_percent_away
+from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id;
+
+# Gross Production Average
+select g.home_team_id, g.game_id,g.away_team_id, ((1.8*((r2dh.Hit+ r2dh.Walk + r2dh.Hit_By_Pitch)/(r2dh.atBat+ r2dh.Walk+ 
+r2dh.Hit_By_Pitch+ r2dh.Sac_Fly))+(r2dh.Single + 2*r2dh.`Double` +3*r2dh.Triple + 4*r2dh.Home_Run )/(r2dh.atBat))/4) as gpa_home,
+((1.8*((r2da.Hit+ r2da.Walk + r2da.Hit_By_Pitch)/(r2da.atBat+ r2da.Walk+ r2da.Hit_By_Pitch+ r2da.Sac_Fly))+(r2da.Single + 
+2*r2da.`Double` +3*r2da.Triple + 4*r2da.Home_Run )/(r2da.atBat))/4) as gpa_away
+from game g join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id;
+
+# Combining all the stats
+select g.home_team_id,g.away_team_id, g.game_id, r2da.Hit/r2da.atBat as BA_Away, r2dh.Hit/r2dh.atBat as BA_home,
+(r2dh.Hit/r2dh.atBat) /(r2da.Hit/r2da.atBat) -1.0 as BA_Ratio, (r2dh.Hit/r2dh.atBat) - (r2da.Hit/r2da.atBat) as BA_diff,
+(r2dh.Single + 2*r2dh.`Double` +3*r2dh.Triple + 4*r2dh.Home_Run )/(r2dh.atBat) as Slug_home,
+(r2da.Single+2*r2da.`Double` +3*r2da.Triple+4*r2da.Home_Run)/(r2da.atBat) as Slug_away,
+(r2dh.Single + 2*r2dh.`Double` +3*r2dh.Triple + 4*r2dh.Home_Run )/(r2dh.atBat)-(r2da.Single+2*r2da.`Double` +3*r2da.Triple
++4*r2da.Home_Run)/(r2da.atBat) as Slug_diff,((r2dh.Single + 2*r2dh.`Double` +3*r2dh.Triple + 4*r2dh.Home_Run )/(r2dh.atBat))/((
+r2da.Single+2*r2da.`Double` +3*r2da.Triple+4*r2da.Home_Run)/(r2da.atBat)) -1.0 as Slug_ratio,
+(r2dh.Single + 2*r2dh.`Double` +3*r2dh.Triple + 4*r2dh.Home_Run ) as Total_Bases_home, 
+(r2da.Single+2*r2da.`Double` +3*r2da.Triple+4*r2da.Home_Run)as Total_Bases_away,
+(r2dh.`Double` +r2dh.Triple + r2dh.Home_Run ) as Extra_Bases_home, 
+(r2da.`Double` +r2da.Triple+r2da.Home_Run)as Extra_Bases_away,
+(((r2dh.Single + 2*r2dh.`Double` +3*r2dh.Triple + 4*r2dh.Home_Run )+ r2dh.Hit_By_Pitch+ r2dh.stolenBaseHome + r2dh.walk)/(
+(r2dh.atBat- r2dh.Hit)+ r2dh.caughtStealingHome+ r2dh.Grounded_Into_Dp)) as Total_Average,
+(r2dh.Hit+ r2dh.walk+ r2dh.Hit_By_Pitch) as Times_On_Bases_home,
+(r2da.Hit+ r2da.walk+ r2da.Hit_By_Pitch) as Times_On_Bases_away,
+((r2dh.Hit+ r2dh.Walk + r2dh.Hit_By_Pitch)/(r2dh.atBat+ r2dh.Walk+ r2dh.Hit_By_Pitch+ r2dh.Sac_Fly)) as on_base_percentage_home,
+((r2da.Hit+ r2da.Walk + r2da.Hit_By_Pitch)/(r2da.atBat+ r2da.Walk+ r2da.Hit_By_Pitch+ r2da.Sac_Fly))as on_base_percentage_away,
+(((r2dh.atBat*(r2dh.Hit+ r2dh.Walk + r2dh.Hit_By_Pitch))+ ((r2dh.Single + 2*r2dh.`Double` 
++3*r2dh.Triple + 4*r2dh.Home_Run )*(r2dh.atBat+ r2dh.Walk+ r2dh.Hit_By_Pitch+ r2dh.Sac_Fly)))/(r2dh.atBat * (r2dh.atBat+ r2dh.Walk+ 
+r2dh.Hit_By_Pitch+ r2dh.Sac_Fly)))as on_base_plus_slugging_home, 
+(((r2da.atBat*(r2da.Hit+ r2da.Walk + r2da.Hit_By_Pitch))+ ((r2da.Single + 2*r2da.`Double` 
++3*r2da.Triple + 4*r2dh.Home_Run )*(r2da.atBat+ r2da.Walk+ r2da.Hit_By_Pitch+ r2da.Sac_Fly)))/(r2da.atBat * (r2da.atBat+ r2da.Walk+ 
+r2da.Hit_By_Pitch+ r2da.Sac_Fly)))as on_base_plus_slugging_away,
+(r2dh.stolenbasehome/(r2dh.stolenbasehome+ r2dh.caughtstealinghome)) as SB_percent_home ,
+(r2da.stolenbasehome/(r2da.stolenbasehome+ r2da.caughtstealinghome)) as SB_percent_away,
+(r2dh.atBat/r2dh.Home_Run) as at_bats_perHR_home,
+(r2da.atBat/r2da.Home_Run) as at_bats_perHR_away,
+(r2dh.plateAppearance/r2dh.Strikeout) as PA_per_SO_home,
+(r2da.plateAppearance/r2da.Strikeout) as PA_per_SO_away,
+(r2dh.walk/r2dh.Strikeout) as walk_SO_home,
+(r2da.walk/r2da.Strikeout) as walk_SO_away,
+(r2dh.Home_Run/r2dh.Hit) as hr_h_home,
+(r2da.Home_Run/r2da.Hit) as hr_h_away,
+((1.8*((r2dh.Hit+ r2dh.Walk + r2dh.Hit_By_Pitch)/(r2dh.atBat+ r2dh.Walk+ 
+r2dh.Hit_By_Pitch+ r2dh.Sac_Fly))+(r2dh.Single + 2*r2dh.`Double` +3*r2dh.Triple + 4*r2dh.Home_Run )/(r2dh.atBat))/4) as gpa_home,
+((1.8*((r2da.Hit+ r2da.Walk + r2da.Hit_By_Pitch)/(r2da.atBat+ r2da.Walk+ r2da.Hit_By_Pitch+ r2da.Sac_Fly))+(r2da.Single + 
+2*r2da.`Double` +3*r2da.Triple + 4*r2da.Home_Run )/(r2da.atBat))/4) as gpa_away,
+case when b.away_runs < b.home_runs then 1
+	   when b.away_runs > b.home_runs then 0 
+	   else 0 end as Home_team_wins
+from game g join RollingAvgTable r2da on r2da.team_id = g.away_team_id and g.game_id = r2da.game_id
+join RollingAvgTable r2dh on r2dh.team_id = g.home_team_id and g.game_id = r2dh.game_id
+join boxscore b on b.game_id = g.game_id;
+
