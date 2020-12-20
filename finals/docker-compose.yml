@@ -1,0 +1,25 @@
+version: "3.1"
+services:
+  final-baseball-data:
+    image: linuxserver/mariadb:latest
+    container_name: final-baseball-data
+    environment:
+      # Using the PUID and PGID allows our containers to map the container’s
+      # internal user to a user on the host machine
+      PUID: 1000
+      PGID: 1000
+      MYSQL_USER: "root"
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+    volumes:
+      - ./db:/config
+    restart: unless-stopped
+  final_project:
+    container_name: final_project #rolling average container
+    depends_on:
+      - final-baseball-data
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: final_project
+    volumes:
+      - ./results:/results
