@@ -8,17 +8,17 @@ RUN mkdir /finals
 RUN chmod a+x /finals
 
 # Coping the baseball database
-COPY ./baseball.sql/ /finals/baseball.sql
+COPY ./baseball.sql /finals/baseball.sql
 
 # Coping our bash file
-COPY ./Finals_bash.sh/ /finals/Finals_bash.sh
+COPY ./Finals_bash.sh /finals/Finals_bash.sh
 
 # Coping the SQL script which gets us our features
-COPY ./Finals.sql/ /finals/Finals.sql
+COPY ./Finals.sql /finals/Finals.sql
 
 # Coping other required files
-COPY ./Assignment4_FeatureEngineering.py/ /finals/Assignment4_FeatureEngineering.py
-COPY ./Midterm_VaishnaviBihare.py/ /finals/Midterm_VaishnaviBihare.py
+COPY ./Assignment4_FeatureEngineering.py /finals/Assignment4_FeatureEngineering.py
+COPY ./Midterm_VaishnaviBihare.py /finals/Midterm_VaishnaviBihare.py
 COPY ./requirements.txt .
 
 RUN chmod +x /finals/Finals_bash.sh
